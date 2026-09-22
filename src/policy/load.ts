@@ -117,6 +117,7 @@ function normalizeKeywordRule(raw?: RouteRule): RouteRule | undefined {
     buffer: Boolean(raw.buffer),
     keywordsRef: raw.keywordsRef,
     onHit: raw.onHit,
+    ...(raw.recallHitMessage ? { recallHitMessage: true } : {}),
     ...(match ? { match } : {}),
   };
 }

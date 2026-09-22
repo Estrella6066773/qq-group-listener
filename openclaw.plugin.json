@@ -2,7 +2,7 @@
   "id": "qq-group-listener",
   "name": "QQ Group Policy Pack Engine",
   "description": "QQ multi-group policy packs with hot-reload, batch triggers, mute, and Control UI admin.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "activation": {
     "onStartup": true
   },
@@ -34,9 +34,9 @@
     }
   },
   "controlUi": {
-    "entry": "dist/control-ui/db50ff76393e2715d02c02c041839a7d66d15112db2661858a516be82184b16b/index.js",
+    "entry": "dist/control-ui/c83ab63be0680480e280b748b105edd6d5e2a07473a3109f2c679b09d94569b8/index.js",
     "styles": [
-      "dist/control-ui/db50ff76393e2715d02c02c041839a7d66d15112db2661858a516be82184b16b/index.css"
+      "dist/control-ui/c83ab63be0680480e280b748b105edd6d5e2a07473a3109f2c679b09d94569b8/index.css"
     ]
   },
   "contracts": {

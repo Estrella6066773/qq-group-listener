@@ -28,10 +28,13 @@ export function evaluate(msg: InboundMessage, pack: PolicyPack): RouteDecision {
       // 有 match AST 走可组合规则；否则扁平 keywords（已扣全局 excludeCategories）
       const hits = evaluateMatchPolicy(msg.text, pack);
       if (hits.length === 0) continue;
-      const actions =
-        rule.onHit === "countAndMaybeMute"
-          ? [{ type: "countAndMaybeMute" as const, matchedKeywords: hits }]
-          : [];
+      const actions: RouteDecision["actions"] = [];
+      if (rule.onHit === "countAndMaybeMute") {
+        actions.push({ type: "countAndMaybeMute", matchedKeywords: hits });
+      }
+      if (rule.recallHitMessage) {
+        actions.push({ type: "recallMessage", matchedKeywords: hits });
+      }
       return fromRule(pack, "keyword", rule, hits, actions);
     }
 

@@ -11,6 +11,7 @@ import { applyPackEdit, getPackView, unbindGroup } from "./policy/pack-editor.js
 import { BufferStore } from "./store/buffer.js";
 import { BatchGate } from "./store/batch-gate.js";
 import { MuteAction } from "./actions/mute.js";
+import { RecallAction } from "./actions/recall.js";
 import { Intake, resolveDataPaths } from "./intake.js";
 import { createPolicyToolHandlers } from "./tools/policy-tool.js";
 import type { PackEdit } from "./types.js";
@@ -109,6 +110,7 @@ export function bootListenerRuntime(api: ListenerApi): ListenerRuntime {
     api.logger,
     dryRun,
   );
+  const recall = new RecallAction(mute, api.logger, dryRun);
 
   const intake = new Intake(
     registry,
@@ -117,6 +119,7 @@ export function bootListenerRuntime(api: ListenerApi): ListenerRuntime {
     mute,
     api.logger,
     qqbot?.appId,
+    recall,
   );
 
   api.on(

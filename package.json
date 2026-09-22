@@ -1,6 +1,6 @@
 {
   "name": "qq-group-listener",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "OpenClaw QQ multi-group policy-pack engine with Control UI admin.",
   "type": "module",
   "private": true,

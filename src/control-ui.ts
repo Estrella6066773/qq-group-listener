@@ -142,7 +142,7 @@ export default defineControlUiPlugin({
 
                 <section class="qgl-section" data-section="route-mute">
                   <h3>路由与禁言</h3>
-                  <p class="qgl-note">路由：每条真实 QQ 群消息按顺序试 mention → keyword → default，命中即停，决定是否唤醒即时模型、是否写入缓冲。禁言：仅 keyword 命中且 onHit 为「计数并可能禁言」时，由插件自动执行，不经过模型。</p>
+                  <p class="qgl-note">路由：每条真实 QQ 群消息按顺序试 mention → keyword → default，命中即停，决定是否唤醒即时模型、是否写入缓冲。禁言：仅 keyword 命中且 onHit 为「计数并可能禁言」时，由插件自动执行。撤回：勾选「撤回命中消息」时调用官方 DELETE（须管理员，通常 2 分钟内）。均不经过即时模型。</p>
                   <p class="qgl-hint" data-role="route-hint"></p>
                   <div class="qgl-form-grid" data-role="route-fields"></div>
                   <p class="qgl-hint" data-role="mute-hint"></p>
@@ -314,7 +314,7 @@ export default defineControlUiPlugin({
             </div>
             <div class="qgl-field-block">
               <span class="qgl-field-title">关键词（keyword）</span>
-              <p class="qgl-note">命中上方匹配条件 / 词表时走此规则。常见配置：关唤醒、开缓冲 → 静默计数或禁言，原文留给批决策。命中后动作选「计数并可能禁言」时，按下方禁言阈值由插件自动处理。</p>
+              <p class="qgl-note">命中上方匹配条件 / 词表时走此规则。常见配置：关唤醒、开缓冲 → 静默计数或禁言，原文留给批决策。命中后动作选「计数并可能禁言」时，按下方禁言阈值由插件自动处理。勾选「撤回命中消息」会立即调用官方撤回接口（须管理员，通常 2 分钟内）。</p>
               <label class="qgl-field">唤醒即时模型
                 <input type="checkbox" data-rf="keyword.wake" ${r.keyword?.wake ? "checked" : ""} />
               </label>
@@ -326,6 +326,9 @@ export default defineControlUiPlugin({
                   <option value="countAndMaybeMute" ${r.keyword?.onHit !== "none" ? "selected" : ""}>计数并可能禁言</option>
                   <option value="none" ${r.keyword?.onHit === "none" ? "selected" : ""}>仅路由，不计数</option>
                 </select>
+              </label>
+              <label class="qgl-field">撤回命中消息（官方 DELETE，&lt;2 分钟）
+                <input type="checkbox" data-rf="keyword.recallHitMessage" ${r.keyword?.recallHitMessage ? "checked" : ""} />
               </label>
             </div>
             <div class="qgl-field-block">
@@ -760,6 +763,7 @@ export default defineControlUiPlugin({
                     buffer: bool("keyword.buffer"),
                     keywordsRef: currentView.route.keyword?.keywordsRef ?? "keywords.yaml",
                     onHit,
+                    recallHitMessage: bool("keyword.recallHitMessage"),
                     match: currentView.match ?? undefined,
                   },
                   default: { wake: bool("default.wake"), buffer: bool("default.buffer") },

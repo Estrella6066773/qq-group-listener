@@ -54,19 +54,26 @@ match:
 - **无 `match` 块**：兼容旧行为，扁平合并非 exclude 分类后任一命中。
 - 非法正则：该规则视为未命中，不拖垮整条消息。
 
-## 静默自动化（禁言）
+## 静默自动化（禁言 / 撤回）
 
-关键词命中可配置为 **不唤醒 agent**（`route.keyword.wake: false`），由插件在窗口内命中次数超过 `hitsBeforeMute` 后直接调用禁言 API。
+关键词命中可配置为 **不唤醒 agent**（`route.keyword.wake: false`），由插件在窗口内命中次数超过 `hitsBeforeMute` 后直接调用禁言 API；并可勾选 `recallHitMessage: true` 立即撤回该条消息。
 
 流程：
 
 1. 用户发消息 → 命中 keyword → `handled: true`（零模型调用）
 2. 原消息若 `buffer: true` 写入 JSONL（`kind: message`）
-3. `countAndMaybeMute` 计数；达阈则 `MuteAction` 执行禁言
-4. 禁言成功后再追加一条 `kind: mute_event` 系统记录（含时长、触发词），供批决策 agent 事后阅读
-5. `@` / `mention` 仍可 `wake: true` 走即时路径
+3. 若 `recallHitMessage`：调用官方 `DELETE /v2/groups/{group_openid}/messages/{message_id}`；成功则追加 `kind: recall_event`
+4. `countAndMaybeMute` 计数；达阈则 `MuteAction` 执行禁言
+5. 禁言成功后再追加一条 `kind: mute_event` 系统记录（含时长、触发词），供批决策 agent 事后阅读
+6. `@` / `mention` 仍可 `wake: true` 走即时路径
 
-`addiction-mute` 默认即此模式。
+`addiction-mute` 默认即此模式（含撤回）。
+
+撤回前提（官方文档）：
+
+- 机器人须为**群管理员**才能撤回普通成员消息。
+- 消息发送超过约 **2 分钟**不可撤回（错误码常见 `40064004`）。
+- 失败只记日志，不拖垮禁言路径；`dryRun=true` 时只记日志与缓冲。
 
 禁言阈值语义（`pack.mute`）：
 
@@ -102,7 +109,7 @@ cron **高频轮询**门闩（建议 `pollEveryMinutes: 1`），只有 `ready=tr
 | 元信息 | description / version |
 | 词表 | 分类新建/删除；单条关键词增删 |
 | 匹配条件 | `combine` + category/terms/regex 规则增删排序 |
-| 路由与禁言 | wake/buffer/onHit、mute 阈值 |
+| 路由与禁言 | wake/buffer/onHit、recallHitMessage、mute 阈值 |
 | 批决策 | combine / 触发器卡片增删 |
 | 群绑定 | 绑定 OpenID、解绑（左侧总览与本包列表均支持） |
 

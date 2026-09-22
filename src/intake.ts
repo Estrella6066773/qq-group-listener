@@ -1,9 +1,10 @@
 /**
  * Intake：OpenClaw before_dispatch 事件 → InboundMessage + RouteDecision 副作用。
- * 联动：PackRegistry → PolicyRouter → BufferStore / StateStore / MuteAction。
+ * 联动：PackRegistry → PolicyRouter → BufferStore / StateStore / MuteAction / RecallAction。
  *
- * 静默自动化：keyword 可 wake=false + onHit=countAndMaybeMute → 达阈自动禁言，
- * 不唤醒 agent；禁言成功后写入 kind=mute_event 缓冲，供批决策阅读。
+ * 静默自动化：keyword 可 wake=false + onHit=countAndMaybeMute → 达阈自动禁言；
+ * recallHitMessage=true → 立即撤回该条（官方 DELETE，须管理员且通常 <2 分钟）。
+ * 均不为此唤醒即时 agent；成功后写入 mute_event / recall_event 供批决策阅读。
  *
  * 注意：失败时 fail-open（返回 undefined，不吞消息）；群 OpenID 必须大写。
  */
@@ -17,6 +18,8 @@ import { BatchGate } from "./store/batch-gate.js";
 import { StateStore, stateFileForGroup } from "./store/state.js";
 import type { MuteAction } from "./actions/mute.js";
 import { buildMuteEventRecord } from "./actions/mute-event.js";
+import type { RecallAction } from "./actions/recall.js";
+import { buildRecallEventRecord } from "./actions/recall-event.js";
 import type { BufferRecord, InboundMessage, RouteDecision } from "./types.js";
 
 export type IntakeLogger = {
@@ -108,6 +111,7 @@ export class Intake {
     private mute: MuteAction,
     private logger: IntakeLogger = {},
     private appId?: string,
+    private recall?: RecallAction,
   ) {
     this.gate = new BatchGate(buffer);
   }
@@ -183,6 +187,21 @@ export class Intake {
     }
 
     for (const action of decision.actions) {
+      if (action.type === "recallMessage" && this.recall) {
+        const result = await this.recall.recallMessage(msg.groupOpenId, msg.messageId);
+        if (result.recalled) {
+          const recallRec = buildRecallEventRecord({
+            groupOpenId: msg.groupOpenId,
+            memberOpenId: msg.memberOpenId,
+            packId: pack.id,
+            matchedRule: decision.matchedRule,
+            timestampMs: Date.now(),
+            messageId: msg.messageId,
+            keywords: action.matchedKeywords,
+          });
+          this.appendAndRefreshGate(recallRec, pack, msg.groupOpenId, recallRec.timestampMs);
+        }
+      }
       if (action.type === "countAndMaybeMute" && pack.mute) {
         const state = this.stateFor(msg.groupOpenId, pack.mute.timezone);
         const windowMs = pack.mute.windowMinutes * 60 * 1000;

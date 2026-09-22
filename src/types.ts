@@ -66,6 +66,11 @@ export type RouteRule = {
   buffer: boolean;
   keywordsRef?: string;
   onHit?: "countAndMaybeMute" | "none";
+  /**
+   * 命中本规则时是否立即撤回该条群消息（官方 DELETE，须管理员且通常 <2 分钟）。
+   * 可与 countAndMaybeMute 同时开启：先撤消息，再按 mute 阈值计数/禁言。
+   */
+  recallHitMessage?: boolean;
   /** 可组合匹配；缺省时扁平合并全部词条（兼容旧 pack）。 */
   match?: MatchPolicy;
 };
@@ -196,6 +201,10 @@ export type PendingAction =
   | {
       type: "countAndMaybeMute";
       matchedKeywords: string[];
+    }
+  | {
+      type: "recallMessage";
+      matchedKeywords: string[];
     };
 
 export type RouteDecision = {
@@ -229,14 +238,18 @@ export type BufferRecord = {
   matchedRule: RouteRuleKind;
   /**
    * message=普通群消息（默认）；mute_event=插件自动禁言后写入的系统记录，
-   * 供批决策 agent 阅读，不表示用户原话。
+   * recall_event=插件自动撤回后写入的系统记录。批决策应知悉且勿重复操作。
    */
-  kind?: "message" | "mute_event";
+  kind?: "message" | "mute_event" | "recall_event";
   mute?: {
     seconds: number;
     keywords: string[];
     hitCount: number;
     extended: boolean;
+  };
+  recall?: {
+    sourceMessageId: string;
+    keywords: string[];
   };
 };
 

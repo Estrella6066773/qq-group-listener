@@ -31,6 +31,7 @@
 | B6 | 状态持久 | 重启后窗口与当日次数不丢 | |
 | B7 | 不误伤 | 烟囱 / nice 等不触发 | |
 | B8 | 禁言入缓冲 | 禁言成功后 JSONL 出现 kind=mute_event，批决策可读 | |
+| B9 | 关键词撤回 | recallHitMessage=true 时命中即尝试撤回；成功出现 kind=recall_event；超时/无权限仅日志失败 | |
 
 ## Control UI 结构化编辑（C）
 
