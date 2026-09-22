@@ -1,0 +1,6 @@
+[
+  {
+    "path": "gateway.controlUi.experimental.customPlugins",
+    "value": true
+  }
+]

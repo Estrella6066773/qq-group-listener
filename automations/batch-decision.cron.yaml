@@ -1,0 +1,39 @@
+# Automation：高频轮询门闩，仅 ready 时才决策（避免固定 10 分钟硬唤醒）
+#
+# 前置：已安装 qq-group-listener，工具 qq_group_policy 可用
+# schedule 建议 = pack.batchDecision.pollEveryMinutes（默认 1）
+
+name: qq-group-listener-batch-decision
+enabled: false
+schedule:
+  kind: every
+  everyMinutes: 1
+sessionTarget: isolated
+delivery:
+  mode: announce
+  channel: "qqbot:group:C3E939C7B5642D6C67C990CFB945967E"
+payload:
+  kind: agentTurn
+  message: |
+    你是 QQ 群批决策任务。先用工具判断是否该决策，再处理缓冲。
+
+    步骤：
+    1. 调用工具 qq_group_policy：
+       action=batch_status
+       groupOpenId=C3E939C7B5642D6C67C990CFB945967E
+    2. 若 status.ready 不为 true：回复 NO_REPLY（或保持沉默），结束。不要读缓冲、不要发言。
+    3. 若 ready=true：读取缓冲
+       <workspace>/state/qq-group-listener/buffer/C3E939C7B5642D6C67C990CFB945967E.jsonl
+       与游标 .cursor.json；只处理游标之后的新行。
+    4. 遵循策略包提示词：
+       <pluginRoot>/packs/addiction-mute/decision-prompt.md
+    5. 需要回复时用 message 工具发到本群（一条综合回复）；不需要则保持沉默。
+    6. 完成后调用 qq_group_policy：
+       action=batch_ack
+       groupOpenId=C3E939C7B5642D6C67C990CFB945967E
+       （推进游标并清除 ready，避免重复决策）
+
+    可用工具改规则（热重载，无需重启）：
+    - qq_group_policy action=get / write_pack / set_keywords_category / bind_group / reload
+
+    禁止话痨；禁止对已 ack 消息再次发言。

@@ -1,0 +1,21 @@
+id: silent-buffer
+version: "1.1"
+description: 示例包——全部群消息静默入缓冲；按消息数或间隔触发批决策
+
+route:
+  order:
+    - default
+  default:
+    wake: false
+    buffer: true
+
+batchDecision:
+  promptFile: decision-prompt.md
+  deliveryChannelPrefix: "qqbot:group:"
+  pollEveryMinutes: 1
+  combine: any
+  triggers:
+    - type: messageCount
+      threshold: 30
+    - type: interval
+      everyMinutes: 15

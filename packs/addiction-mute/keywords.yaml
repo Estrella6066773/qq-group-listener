@@ -1,0 +1,139 @@
+# Machine-readable keyword list for addiction-mute pack.
+# Matching: zh = substring (after casefold + simple trad→simp);
+#           en = word-boundary. Alcohol terms are intentionally absent.
+version: "1.0"
+excludeCategories:
+  - alcohol
+
+categories:
+  betel:
+    - 槟榔
+    - 檳榔
+    - 大果
+    - 青果
+    - 槟榔果
+    - 槟榔片
+    - 干槟榔
+    - 鲜槟榔
+    - 和成天下
+    - 口味王
+    - 伍子醉
+    - 榔佰旺
+    - 宾之郎
+    - 嚼槟榔
+    - 槟榔西施
+  tobacco:
+    # Prefer compounds over bare "烟" to avoid 烟囱 / 烟雾报警
+    - 香烟
+    - 卷烟
+    - 烤烟
+    - 烟叶
+    - 烟丝
+    - 抽烟
+    - 吸烟
+    - 烟瘾
+    - 老烟枪
+    - 尼古丁
+    - 尼古丁袋
+    - 嚼烟
+    - 鼻烟
+    - 雪茄
+    - 烟斗
+    - 手卷烟
+    - 电子烟
+    - 雾化器
+    - 烟弹
+    - vape
+    - relx
+    - 悦刻
+    - 柚子
+    - 魔笛
+    - 小野
+    - 徕米
+    - 加热不燃烧
+    - IQOS
+  cannabis:
+    - 大麻
+    - 叶子
+    - weed
+    - marijuana
+    - cannabis
+    - 哈希
+    - hash
+    - 大麻油
+    - 大麻脂
+    - 麻糖
+    - 四氢大麻酚
+    - THC
+    - CBD油
+    - 飞叶子
+    - 嗨草
+  classic_drugs:
+    - 海洛因
+    - 白粉
+    - 白面
+    - 四号
+    - 老海
+    - 冰毒
+    - 冰
+    - 甲基苯丙胺
+    - meth
+    - 麻古
+    - 麻果
+    - 摇头丸
+    - MDMA
+    - ecstasy
+    - 可卡因
+    - cocaine
+    - 古柯
+    - K粉
+    - 氯胺酮
+    - ketamine
+    - k他命
+    - 鸦片
+    - 大烟
+    - 罂粟
+    - 罂粟壳
+    - 吗啡
+    - 杜冷丁
+    - 美沙酮
+  novel_psychoactive:
+    - 笑气
+    - 一氧化二氮
+    - 上头电子烟
+    - 依托咪酯
+    - 烟油
+    - 邮票
+    - LSD
+    - 麦角酸
+    - 迷幻
+    - 致幻剂
+    - 开心水
+    - 神仙水
+    - γ-羟丁酸
+    - GHB
+    - 氟硝西泮
+    - 蓝精灵
+    - 安定
+    - 曲马多
+    - 芬太尼
+    - 合成大麻素
+    - K2
+    - 浴盐
+    - 喵喵
+    - 甲卡西酮
+  prescription_abuse:
+    - 止咳水
+    - 右美沙芬
+    - 复方甘草片
+    - 镇痛药滥用
+    - 安非他命
+    - 苯丙胺
+    - 利他林
+    - 专注达
+    - 苯二氮
+    - 劳拉西泮
+    - 阿普唑仑
+
+# English / latin tokens matched with word boundaries
+englishWordBoundary: true

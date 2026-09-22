@@ -1,0 +1,259 @@
+.qgl-admin {
+  display: grid;
+  gap: 16px;
+  padding: 20px 24px 32px;
+  color: var(--text);
+  max-width: 1200px;
+}
+
+.qgl-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.qgl-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.qgl-sub,
+.qgl-meta,
+.qgl-hint,
+.qgl-muted,
+.qgl-empty {
+  margin: 4px 0 0;
+  color: var(--muted, var(--text-muted, #888));
+  font-size: 0.9rem;
+}
+
+.qgl-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .qgl-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.qgl-panel {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 92%, var(--accent) 8%);
+}
+
+.qgl-panel h2,
+.qgl-panel h3 {
+  margin: 4px 0 0;
+  font-size: 0.95rem;
+}
+
+[data-role="packs"],
+[data-role="bindings"],
+[data-role="batches"] {
+  display: grid;
+  gap: 10px;
+}
+
+/* —— 列表选择卡（策略包 / 绑定）：不是主色实心按钮 —— */
+.qgl-item,
+.qgl-pack {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+}
+
+.qgl-pack {
+  gap: 6px;
+  padding: 12px 14px;
+}
+
+.qgl-pack__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.qgl-pack__name {
+  font-weight: 650;
+  font-size: 0.95rem;
+  word-break: break-all;
+}
+
+.qgl-pack__badge {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 80%, var(--accent) 20%);
+  color: var(--text);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.qgl-pack__meta {
+  color: var(--muted, #888);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.qgl-pack__desc {
+  color: var(--muted, #888);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.qgl-item:hover,
+.qgl-pack:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--bg) 88%, var(--accent) 12%);
+}
+
+.qgl-item.is-active,
+.qgl-pack.is-active {
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
+  background: color-mix(in srgb, var(--bg) 82%, var(--accent) 18%);
+}
+
+.qgl-item strong {
+  font-size: 0.86rem;
+  word-break: break-all;
+}
+
+.qgl-item span {
+  color: var(--muted, #888);
+  font-size: 0.82rem;
+}
+
+.qgl-batch {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.qgl-batch.is-ready {
+  border-color: var(--accent);
+}
+
+.qgl-editor textarea {
+  width: 100%;
+  min-height: 420px;
+  box-sizing: border-box;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.qgl-editor-head,
+.qgl-actions,
+.qgl-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.qgl-batch .qgl-row {
+  margin-top: 2px;
+}
+
+/* —— 主操作按钮：仅 .qgl-btn，避免染上策略包列表 —— */
+.qgl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-foreground, #fff);
+  font: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.qgl-btn + .qgl-btn {
+  margin-left: 0; /* flex gap 负责间距 */
+}
+
+.qgl-btn--ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.qgl-btn--sm {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.qgl-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.qgl-bind-form input {
+  flex: 1;
+  min-width: 180px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.qgl-status {
+  min-height: 1.2em;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.qgl-status[data-kind="ok"] {
+  color: var(--success, #2a9d6e);
+}
+
+.qgl-status[data-kind="err"] {
+  color: var(--danger, #c44);
+}
+
+.qgl-busy {
+  opacity: 0.85;
+}

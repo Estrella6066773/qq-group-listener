@@ -1,0 +1,52 @@
+{
+  "id": "qq-group-listener",
+  "name": "QQ Group Policy Pack Engine",
+  "description": "QQ multi-group policy packs with hot-reload, batch triggers, mute, and Control UI admin.",
+  "version": "0.2.0",
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "rootDir": {
+        "type": "string",
+        "description": "Plugin root containing config/ and packs/."
+      },
+      "dataDir": {
+        "type": "string",
+        "description": "Directory for buffer/ and state/."
+      },
+      "dryRun": {
+        "type": "boolean",
+        "description": "Log mute actions without calling the platform API."
+      },
+      "logLevel": {
+        "type": "string",
+        "enum": [
+          "debug",
+          "info",
+          "warn",
+          "error"
+        ]
+      }
+    }
+  },
+  "controlUi": {
+    "entry": "dist/control-ui/49cd63cc63108cfb628aa87dcd83ce7a49431f82f148f4265f215242118405a1/index.js",
+    "styles": [
+      "dist/control-ui/49cd63cc63108cfb628aa87dcd83ce7a49431f82f148f4265f215242118405a1/index.css"
+    ]
+  },
+  "contracts": {
+    "tools": [
+      "qq_group_policy"
+    ]
+  },
+  "toolMetadata": {
+    "qq_group_policy": {
+      "optional": true
+    }
+  }
+}

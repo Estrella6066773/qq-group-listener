@@ -1,0 +1,20 @@
+[
+  {
+    "path": "plugins.entries.qq-group-listener.hooks.allowConversationAccess",
+    "value": true
+  },
+  {
+    "path": "plugins.entries.qq-group-listener.config",
+    "value": {
+      "dryRun": true
+    }
+  },
+  {
+    "path": "channels.qqbot.groups.C3E939C7B5642D6C67C990CFB945967E.requireMention",
+    "value": false
+  },
+  {
+    "path": "channels.qqbot.groups.C3E939C7B5642D6C67C990CFB945967E.tools.alsoAllow",
+    "value": ["qq_group_policy"]
+  }
+]

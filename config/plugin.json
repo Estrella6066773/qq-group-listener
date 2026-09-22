@@ -1,0 +1,5 @@
+{
+  "bufferDir": "buffer",
+  "stateDir": "state",
+  "logLevel": "info"
+}

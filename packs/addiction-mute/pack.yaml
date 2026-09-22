@@ -1,0 +1,43 @@
+id: addiction-mute
+version: "1.1"
+description: 成瘾品关键词唤醒 + 频次禁言；未命中静默入缓冲；保留 @ 即时唤醒；批决策多触发器
+
+route:
+  order:
+    - mention
+    - keyword
+    - default
+  mention:
+    wake: true
+    buffer: false
+  keyword:
+    wake: true
+    buffer: false
+    keywordsRef: keywords.yaml
+    onHit: countAndMaybeMute
+  default:
+    wake: false
+    buffer: true
+
+mute:
+  timezone: Asia/Shanghai
+  windowMinutes: 30
+  hitsBeforeMute: 3
+  muteSeconds: 60
+  dailyMuteThreshold: 3
+  extendedMuteSeconds: 600
+
+batchDecision:
+  promptFile: decision-prompt.md
+  deliveryChannelPrefix: "qqbot:group:"
+  # cron 建议每 1 分钟轮询门闩；真正是否决策看 triggers
+  pollEveryMinutes: 1
+  # any=任一满足即 ready；all=全部同时满足
+  combine: any
+  triggers:
+    - type: interval
+      everyMinutes: 10
+    - type: messageCount
+      threshold: 20
+    - type: idle
+      idleMinutes: 5
