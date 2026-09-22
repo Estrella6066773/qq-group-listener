@@ -77,7 +77,8 @@ function escapeRegExp(s: string): string {
 
 /**
  * 判定是否被 @ / 提及机器人。
- * 前置：依赖 Intake 已从事件抽出 mentioned，或传入原始线索。
+ * 联动：Intake.toInbound → evaluate(mention 规则)；漏检会导致 wake=false 走 default 静默吞掉。
+ * 注意：QQ 通道经 OpenClaw 后，正文里常见字面量 `(@you)`，未必带 rawEventType / mentions / <@appId>。
  */
 export function isMentioned(flags: {
   mentioned?: boolean;
@@ -92,9 +93,14 @@ export function isMentioned(flags: {
   if (Array.isArray(flags.mentions) && flags.mentions.some((m) => m?.is_you === true)) {
     return true;
   }
+  const text = flags.text ?? "";
+  // OpenClaw qqbot 入站常把「@本机器人」渲染成正文里的 (@you)
+  if (/\(@you\)/i.test(text) || /(?<![A-Za-z0-9_])@you(?![A-Za-z0-9_])/i.test(text)) {
+    return true;
+  }
   const appId = flags.appId?.trim();
-  if (appId && flags.text) {
-    if (flags.text.includes(`<@${appId}>`) || flags.text.includes(`@${appId}`)) return true;
+  if (appId && text) {
+    if (text.includes(`<@${appId}>`) || text.includes(`@${appId}`)) return true;
   }
   return false;
 }

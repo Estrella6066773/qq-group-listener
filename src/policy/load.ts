@@ -7,14 +7,27 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+import { normalizeMatchPolicy } from "./match-policy.js";
 import { normalizeBatchPolicy } from "./triggers.js";
-import type { GroupsConfig, PluginEngineConfig, PolicyPack, RouteRuleKind } from "../types.js";
+import type {
+  GroupsConfig,
+  KeywordsFileData,
+  PluginEngineConfig,
+  PolicyPack,
+  RouteRule,
+  RouteRuleKind,
+} from "../types.js";
 
 type RawPack = {
   id: string;
   version: string;
   description?: string;
-  route: PolicyPack["route"];
+  route: {
+    order?: RouteRuleKind[];
+    mention?: RouteRule;
+    keyword?: RouteRule;
+    default: RouteRule;
+  };
   mute?: PolicyPack["mute"];
   batchDecision?: PolicyPack["batchDecision"];
 };
@@ -23,6 +36,7 @@ type RawKeywords = {
   version?: string;
   categories?: Record<string, string[]>;
   keywords?: string[];
+  excludeCategories?: string[];
 };
 
 type CacheEntry = {
@@ -70,6 +84,13 @@ function fileMtimeMs(file: string): number {
   }
 }
 
+function atomicWrite(file: string, body: string): void {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = `${file}.tmp`;
+  fs.writeFileSync(tmp, body.endsWith("\n") ? body : `${body}\n`, "utf8");
+  fs.renameSync(tmp, file);
+}
+
 /** 计算策略包相关文件的最新 mtime，用于热重载判定。 */
 export function packFingerprint(rootDir: string, packId: string): number {
   const packDir = path.join(rootDir, "packs", packId);
@@ -88,6 +109,78 @@ export function packFingerprint(rootDir: string, packId: string): number {
   return m;
 }
 
+function normalizeKeywordRule(raw?: RouteRule): RouteRule | undefined {
+  if (!raw) return undefined;
+  const match = normalizeMatchPolicy(raw.match);
+  return {
+    wake: Boolean(raw.wake),
+    buffer: Boolean(raw.buffer),
+    keywordsRef: raw.keywordsRef,
+    onHit: raw.onHit,
+    ...(match ? { match } : {}),
+  };
+}
+
+/**
+ * 读取 keywords.yaml 结构化数据。
+ * 注意：categories 保留全部分类；扁平 keywords 需再经 flattenKeywords 排除全局 exclude。
+ */
+export function loadKeywordsData(filePath: string): KeywordsFileData {
+  if (!fs.existsSync(filePath)) {
+    return { categories: {}, keywords: [], excludeCategories: [] };
+  }
+  const raw = parseYaml(fs.readFileSync(filePath, "utf8")) as RawKeywords;
+  const categories: Record<string, string[]> = {};
+  if (raw.categories && typeof raw.categories === "object") {
+    for (const [name, list] of Object.entries(raw.categories)) {
+      if (!Array.isArray(list)) continue;
+      categories[name] = [...new Set(list.map((k) => String(k).trim()).filter(Boolean))];
+    }
+  }
+  const keywords = Array.isArray(raw.keywords)
+    ? [...new Set(raw.keywords.map((k) => String(k).trim()).filter(Boolean))]
+    : [];
+  const excludeCategories = Array.isArray(raw.excludeCategories)
+    ? [...new Set(raw.excludeCategories.map((c) => String(c).trim()).filter(Boolean))]
+    : [];
+  return {
+    version: raw.version,
+    categories,
+    keywords,
+    excludeCategories,
+  };
+}
+
+/** 扁平合并：顶层 keywords + 非 exclude 分类；供无 match 时的兼容匹配。 */
+export function flattenKeywords(data: KeywordsFileData): string[] {
+  const excluded = new Set(data.excludeCategories);
+  const out: string[] = [...data.keywords];
+  for (const [name, list] of Object.entries(data.categories)) {
+    if (excluded.has(name)) continue;
+    out.push(...list);
+  }
+  return [...new Set(out.map((k) => String(k).trim()).filter(Boolean))];
+}
+
+/** @deprecated 请用 loadKeywordsData + flattenKeywords；保留给旧测试调用。 */
+export function loadKeywordsFile(filePath: string): string[] {
+  return flattenKeywords(loadKeywordsData(filePath));
+}
+
+export function writeKeywordsData(filePath: string, data: KeywordsFileData): void {
+  const body: RawKeywords = {
+    version: data.version ?? "1.0",
+  };
+  if (data.excludeCategories.length > 0) {
+    body.excludeCategories = data.excludeCategories;
+  }
+  if (data.keywords.length > 0) {
+    body.keywords = data.keywords;
+  }
+  body.categories = data.categories;
+  atomicWrite(filePath, stringifyYaml(body));
+}
+
 export function loadPack(rootDir: string, packId: string): PolicyPack | null {
   const packDir = path.join(rootDir, "packs", packId);
   const packFile = path.join(packDir, "pack.yaml");
@@ -98,14 +191,22 @@ export function loadPack(rootDir: string, packId: string): PolicyPack | null {
     throw new Error(`Invalid pack.yaml in ${packDir}`);
   }
 
+  let categories: Record<string, string[]> = {};
+  let looseKeywords: string[] = [];
+  let excludeCategories: string[] = [];
   let keywords: string[] = [];
   const ref = raw.route.keyword?.keywordsRef;
   if (ref) {
-    keywords = loadKeywordsFile(path.join(packDir, ref));
+    const data = loadKeywordsData(path.join(packDir, ref));
+    categories = data.categories;
+    looseKeywords = data.keywords;
+    excludeCategories = data.excludeCategories;
+    keywords = flattenKeywords(data);
   }
 
   const order = (raw.route.order ?? ["default"]) as RouteRuleKind[];
   const batchDecision = normalizeBatchPolicy(raw.batchDecision);
+  const keyword = normalizeKeywordRule(raw.route.keyword);
 
   return {
     id: raw.id,
@@ -114,50 +215,44 @@ export function loadPack(rootDir: string, packId: string): PolicyPack | null {
     route: {
       order,
       mention: raw.route.mention,
-      keyword: raw.route.keyword,
+      keyword,
       default: raw.route.default,
     },
     mute: raw.mute,
     batchDecision,
     keywords,
+    categories,
+    looseKeywords,
+    excludeCategories,
     packDir,
   };
 }
 
-export function loadKeywordsFile(filePath: string): string[] {
-  if (!fs.existsSync(filePath)) return [];
-  const raw = parseYaml(fs.readFileSync(filePath, "utf8")) as RawKeywords;
-  const out: string[] = [];
-  if (Array.isArray(raw.keywords)) out.push(...raw.keywords);
-  if (raw.categories && typeof raw.categories === "object") {
-    for (const list of Object.values(raw.categories)) {
-      if (Array.isArray(list)) out.push(...list);
-    }
-  }
-  return [...new Set(out.map((k) => String(k).trim()).filter(Boolean))];
-}
-
 export function writeGroupsConfig(rootDir: string, groups: GroupsConfig): void {
-  const file = groupsConfigPath(rootDir);
   const body = stringifyYaml({ groups: groups.groups });
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const tmp = `${file}.tmp`;
-  fs.writeFileSync(tmp, body, "utf8");
-  fs.renameSync(tmp, file);
+  atomicWrite(groupsConfigPath(rootDir), body);
 }
 
 /** 整文件写回 pack.yaml（AI 改规则入口）；调用方应随后 reload。 */
 export function writePackYaml(rootDir: string, packId: string, yamlText: string): void {
   const file = packYamlPath(rootDir, packId);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  // validate parse
   const raw = parseYaml(yamlText) as RawPack;
   if (!raw?.id || !raw.route?.default) {
     throw new Error("Invalid pack.yaml: need id and route.default");
   }
-  const tmp = `${file}.tmp`;
-  fs.writeFileSync(tmp, yamlText.endsWith("\n") ? yamlText : `${yamlText}\n`, "utf8");
-  fs.renameSync(tmp, file);
+  atomicWrite(file, yamlText);
+}
+
+/** 以对象写回 pack.yaml（结构化编辑器用）。 */
+export function writePackObject(rootDir: string, packId: string, obj: unknown): void {
+  writePackYaml(rootDir, packId, stringifyYaml(obj));
+}
+
+export function readPackYamlObject(rootDir: string, packId: string): Record<string, unknown> {
+  const text = readPackYamlText(rootDir, packId);
+  const raw = parseYaml(text) as Record<string, unknown>;
+  if (!raw || typeof raw !== "object") throw new Error(`无法解析 pack.yaml: ${packId}`);
+  return raw;
 }
 
 export function readPackYamlText(rootDir: string, packId: string): string {
@@ -217,6 +312,19 @@ export class PackRegistry {
     this.groups.groups[groupOpenId.toUpperCase()] = packId;
     writeGroupsConfig(this.rootDir, this.groups);
     this.groupsMtimeMs = fileMtimeMs(groupsConfigPath(this.rootDir));
+  }
+
+  /** 解除群绑定；键不存在时静默成功。 */
+  unbindGroup(groupOpenId: string): boolean {
+    this.refreshGroupsIfNeeded(true);
+    const key = groupOpenId.toUpperCase();
+    const existed = Object.prototype.hasOwnProperty.call(this.groups.groups, key);
+    if (existed) {
+      delete this.groups.groups[key];
+      writeGroupsConfig(this.rootDir, this.groups);
+      this.groupsMtimeMs = fileMtimeMs(groupsConfigPath(this.rootDir));
+    }
+    return existed;
   }
 
   getPackById(packId: string): PolicyPack | null {

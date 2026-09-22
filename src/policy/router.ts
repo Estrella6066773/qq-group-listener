@@ -3,7 +3,8 @@
  * 联动：Intake → evaluate → BufferStore / Actions；不直接碰 I/O。
  */
 
-import { isMentioned, matchKeywords } from "./matchers.js";
+import { isMentioned } from "./matchers.js";
+import { evaluateMatchPolicy } from "./match-policy.js";
 import type { InboundMessage, PolicyPack, RouteDecision, RouteRule, RouteRuleKind } from "../types.js";
 
 export function evaluate(msg: InboundMessage, pack: PolicyPack): RouteDecision {
@@ -24,7 +25,8 @@ export function evaluate(msg: InboundMessage, pack: PolicyPack): RouteDecision {
     if (kind === "keyword") {
       const rule = pack.route.keyword;
       if (!rule) continue;
-      const hits = matchKeywords(msg.text, pack.keywords);
+      // 有 match AST 走可组合规则；否则扁平 keywords（已扣全局 excludeCategories）
+      const hits = evaluateMatchPolicy(msg.text, pack);
       if (hits.length === 0) continue;
       const actions =
         rule.onHit === "countAndMaybeMute"

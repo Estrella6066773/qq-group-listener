@@ -4,13 +4,12 @@
  * batch_ack 推进游标。须在 openclaw.plugin.json contracts.tools 声明。
  */
 
-import fs from "node:fs";
-import path from "node:path";
-import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import type { PackRegistry } from "../policy/load.js";
-import { readPackYamlText, writePackYaml } from "../policy/load.js";
+import { writePackYaml } from "../policy/load.js";
+import { applyPackEdit, getPackView, unbindGroup } from "../policy/pack-editor.js";
 import type { BufferStore } from "../store/buffer.js";
 import { BatchGate } from "../store/batch-gate.js";
+import type { PackEdit } from "../types.js";
 
 export type PolicyToolLogger = {
   info?: (msg: string) => void;
@@ -23,10 +22,12 @@ type Action =
   | "reload"
   | "write_pack"
   | "bind_group"
+  | "unbind_group"
   | "list_bindings"
   | "batch_status"
   | "batch_ack"
-  | "set_keywords_category";
+  | "set_keywords_category"
+  | "apply_pack_edit";
 
 export type PolicyToolParams = {
   action: Action;
@@ -37,6 +38,8 @@ export type PolicyToolParams = {
   /** set_keywords_category */
   category?: string;
   keywords?: string[];
+  /** apply_pack_edit */
+  edit?: PackEdit;
 };
 
 function ok(details: Record<string, unknown>, text?: string) {
@@ -63,7 +66,7 @@ export function createPolicyToolHandlers(deps: {
   return {
     name: "qq_group_policy",
     description:
-      "QQ 群策略包热管理：读取/重载/改写 pack.yaml、绑定群、查询或确认批决策触发门闩。改 YAML 后自动按文件 mtime 热重载，无需重启 Gateway。",
+      "QQ 群策略包热管理：读取/重载/结构化编辑 pack、绑定/解绑群、批决策门闩。改配置后按文件 mtime 热重载。",
     parameters: {
       type: "object",
       additionalProperties: false,
@@ -76,10 +79,12 @@ export function createPolicyToolHandlers(deps: {
             "reload",
             "write_pack",
             "bind_group",
+            "unbind_group",
             "list_bindings",
             "batch_status",
             "batch_ack",
             "set_keywords_category",
+            "apply_pack_edit",
           ],
         },
         groupOpenId: { type: "string", description: "群 OpenID（建议大写）" },
@@ -90,6 +95,11 @@ export function createPolicyToolHandlers(deps: {
           type: "array",
           items: { type: "string" },
           description: "替换该 category 下的词表",
+        },
+        edit: {
+          type: "object",
+          description: "apply_pack_edit 的判别联合（含 op 字段）",
+          additionalProperties: true,
         },
       },
     },
@@ -128,27 +138,21 @@ export function createPolicyToolHandlers(deps: {
           return ok({ ok: true, groupOpenId, packId });
         }
 
+        if (action === "unbind_group") {
+          if (!groupOpenId) return fail("unbind_group 需要 groupOpenId");
+          return ok(unbindGroup(deps.registry, groupOpenId));
+        }
+
         if (action === "get") {
           if (!packId && groupOpenId) {
             packId = deps.registry.packIdForGroup(groupOpenId) ?? undefined;
           }
           if (!packId) return fail("get 需要 packId 或已绑定的 groupOpenId");
-          const pack = deps.registry.getPackById(packId);
-          if (!pack) return fail(`策略包不存在: ${packId}`);
-          const yamlText = readPackYamlText(deps.registry.root, packId);
+          const view = getPackView(deps.registry, packId);
           return ok({
             ok: true,
-            pack: {
-              id: pack.id,
-              version: pack.version,
-              description: pack.description,
-              route: pack.route,
-              mute: pack.mute,
-              batchDecision: pack.batchDecision,
-              keywordCount: pack.keywords.length,
-              keywordsSample: pack.keywords.slice(0, 20),
-            },
-            yamlText,
+            pack: view,
+            yamlText: view.yamlText,
           });
         }
 
@@ -171,28 +175,24 @@ export function createPolicyToolHandlers(deps: {
           if (!packId) return fail("set_keywords_category 需要 packId");
           if (!params.category) return fail("需要 category");
           if (!Array.isArray(params.keywords)) return fail("需要 keywords 数组");
-          const pack = deps.registry.getPackById(packId);
-          if (!pack) return fail(`策略包不存在: ${packId}`);
-          const ref = pack.route.keyword?.keywordsRef ?? "keywords.yaml";
-          const file = path.join(pack.packDir, ref);
-          let raw: { version?: string; categories?: Record<string, string[]>; keywords?: string[] } =
-            {};
-          if (fs.existsSync(file)) {
-            raw = parseYaml(fs.readFileSync(file, "utf8")) as typeof raw;
-          }
-          raw.categories = raw.categories ?? {};
-          raw.categories[params.category] = params.keywords.map((k) => String(k).trim()).filter(Boolean);
-          const tmp = `${file}.tmp`;
-          fs.writeFileSync(tmp, stringifyYaml(raw), "utf8");
-          fs.renameSync(tmp, file);
-          deps.registry.invalidatePack(packId);
-          const reloaded = deps.registry.getPackById(packId);
+          const view = applyPackEdit(deps.registry, packId, {
+            op: "set_keywords_category",
+            category: params.category,
+            keywords: params.keywords,
+          });
           return ok({
             ok: true,
             packId,
             category: params.category,
-            keywordCount: reloaded?.keywords.length ?? 0,
+            keywordCount: view.keywordCount,
           });
+        }
+
+        if (action === "apply_pack_edit") {
+          if (!packId) return fail("apply_pack_edit 需要 packId");
+          if (!params.edit) return fail("apply_pack_edit 需要 edit");
+          const view = applyPackEdit(deps.registry, packId, params.edit);
+          return ok({ ok: true, pack: view });
         }
 
         if (action === "batch_status") {

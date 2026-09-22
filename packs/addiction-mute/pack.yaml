@@ -1,21 +1,64 @@
 id: addiction-mute
-version: "1.1"
-description: 成瘾品关键词唤醒 + 频次禁言；未命中静默入缓冲；保留 @ 即时唤醒；批决策多触发器
+version: "1.3"
+description: |
+  成瘾品关键词策略包：插件在入站时自动处理，即时模型与批决策模型各走各的路径。
+
+  【路由顺序】mention → keyword → default（短路：命中即停）。
+
+  【@ / 提及】命中 mention 时即时唤醒模型（wake=true），本条不入缓冲。
+  仅处理 QQ 频道真实入站（channel=qqbot）；在控制台群会话里打字（channel=webchat）不经过本包静默逻辑。
+
+  【关键词】命中词表时：不唤醒即时模型（wake=false）；原消息写入缓冲；
+  对发送者做滑动窗口计数（onHit=countAndMaybeMute）。
+  匹配规则：combine=any，按分类 betel/tobacco/cannabis/classic_drugs/novel_psychoactive/prescription_abuse 任一命中；
+  全局与规则级均排除 alcohol。词表见 keywords.yaml。
+
+  【自动禁言】Asia/Shanghai 时区；30 分钟窗口内命中次数严格大于 3（即第 4 次）触发禁言；
+  当日禁言次数未满 3 次时禁言 60 秒，达到或超过 dailyMuteThreshold=3 后改用延长档 600 秒。
+  禁言由插件直接调用平台接口（不经过即时模型）；成功后追加 kind=mute_event 系统记录到缓冲，供批决策事后阅读。
+  配置 dryRun=true 时只记日志与缓冲，不真正禁言。
+
+  【默认闲聊】未命中 mention/keyword 时：不唤醒，写入缓冲。
+
+  【批决策门闩】cron 建议每 1 分钟轮询；combine=any，下列任一满足即 ready：
+  距上次决策满 10 分钟；游标后待处理消息达到 20 条；有待处理且空闲满 5 分钟。
+  ready 后由批决策 agent 阅读缓冲（含用户消息与自动禁言记录），按 decision-prompt.md 决定是否发言；
+  看到自动禁言记录不要再次发起禁言。
 
 route:
+  # 短路求值：按 order 依次尝试，命中即停止。仅 channel=qqbot 的真实入站会走本路由。
   order:
-    - mention
-    - keyword
-    - default
+    - mention   # @ / 被机器人提及
+    - keyword   # 关键词匹配（见下方 match / keywords.yaml）
+    - default   # 其余闲聊
   mention:
+    # wake=true：本条立即交给即时模型；buffer=false：不写入批决策缓冲
     wake: true
     buffer: false
   keyword:
-    wake: true
-    buffer: false
+    # wake=false：不叫即时模型；buffer=true：原消息入缓冲供批决策阅读
+    # onHit=countAndMaybeMute：命中后按 mute 策略计数，达阈由插件自动禁言
+    wake: false
+    buffer: true
     keywordsRef: keywords.yaml
     onHit: countAndMaybeMute
+    # match：可组合规则；无此块时退回扁平词表（已扣 excludeCategories）
+    match:
+      combine: any
+      rules:
+        - type: category
+          categories:
+            - betel
+            - tobacco
+            - cannabis
+            - classic_drugs
+            - novel_psychoactive
+            - prescription_abuse
+          exclude:
+            - alcohol
+          within: any
   default:
+    # 未命中 @ 与关键词：静默入缓冲，不唤醒即时模型
     wake: false
     buffer: true
 

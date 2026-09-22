@@ -8,10 +8,13 @@ import { contract } from "./contract.js";
 import {
   bootListenerRuntime,
   buildOverview,
+  editPack,
   getPackPayload,
   savePack,
+  unbindPackGroup,
   type ListenerApi,
 } from "./runtime.js";
+import type { PackEdit } from "./types.js";
 
 export default defineFeaturePlugin({
   contract,
@@ -36,6 +39,16 @@ export default defineFeaturePlugin({
         return out;
       },
 
+      apply_pack_edit: ({ packId, edit }) => {
+        const view = editPack(rt, packId, edit as PackEdit);
+        events.emit("policy_changed", {
+          kind: "apply_pack_edit",
+          packId,
+          atMs: Date.now(),
+        });
+        return view;
+      },
+
       bind_group: ({ groupOpenId, packId }) => {
         const gid = groupOpenId.trim().toUpperCase();
         if (!rt.registry.getPackById(packId)) {
@@ -49,6 +62,16 @@ export default defineFeaturePlugin({
           atMs: Date.now(),
         });
         return { ok: true, groupOpenId: gid, packId };
+      },
+
+      unbind_group: ({ groupOpenId }) => {
+        const out = unbindPackGroup(rt, groupOpenId);
+        events.emit("policy_changed", {
+          kind: "unbind_group",
+          groupOpenId: out.groupOpenId,
+          atMs: Date.now(),
+        });
+        return out;
       },
 
       batch_status: ({ groupOpenId }) => {

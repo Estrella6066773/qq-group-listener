@@ -1,13 +1,21 @@
 id: silent-buffer
-version: "1.1"
-description: 示例包——全部群消息静默入缓冲；按消息数或间隔触发批决策
+version: "1.3"
+description: |
+  示例策略包：全部群消息静默入缓冲，不唤醒即时模型；仅由批决策门闩事后唤醒。
+
+  【路由】仅 default：wake=false，buffer=true（每条真实 QQ 入站都写入缓冲并吞掉即时派发）。
+
+  【批决策门闩】pollEveryMinutes=1；combine=any，下列任一满足即 ready：
+  游标后待处理消息达到 30 条；或距上次决策满 15 分钟。
+  ready 后由批决策 agent 按 decision-prompt.md 阅读缓冲并决定是否发言。
 
 route:
+  # 本包仅 default：所有真实 QQ 入站都静默入缓冲，不唤醒即时模型
   order:
     - default
   default:
-    wake: false
-    buffer: true
+    wake: false   # 不叫即时模型
+    buffer: true  # 写入批决策缓冲
 
 batchDecision:
   promptFile: decision-prompt.md

@@ -109,7 +109,7 @@ export class MuteAction {
 
   /**
    * 根据命中计数与策略决定是否禁言并执行。
-   * @returns 是否实际发起了禁言（含 dryRun 记为 true）
+   * 成功时返回时长等信息，供 Intake 写入缓冲系统记录（不唤醒 agent）。
    */
   async maybeMute(args: {
     groupOpenId: string;
@@ -117,11 +117,14 @@ export class MuteAction {
     hitCount: number;
     policy: MutePolicy;
     state: StateStore;
-  }): Promise<boolean> {
+  }): Promise<
+    | { muted: false }
+    | { muted: true; seconds: number; extended: boolean; priorMutes: number }
+  > {
     const { groupOpenId, memberOpenId, hitCount, policy, state } = args;
-    if (!memberOpenId) return false;
+    if (!memberOpenId) return { muted: false };
     const decision = state.shouldMute(memberOpenId, hitCount, policy);
-    if (!decision.mute) return false;
+    if (!decision.mute) return { muted: false };
     try {
       await this.muteMember(groupOpenId, memberOpenId, decision.seconds);
       state.recordMute(memberOpenId);
@@ -130,11 +133,16 @@ export class MuteAction {
         `qq-group-listener: muted ${memberOpenId} for ${decision.seconds}s ` +
           `(tier=${decision.extended ? "extended" : "base"}, mutesToday=${decision.priorMutes + 1})`,
       );
-      return true;
+      return {
+        muted: true,
+        seconds: decision.seconds,
+        extended: decision.extended,
+        priorMutes: decision.priorMutes,
+      };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.error?.(`qq-group-listener: mute failed: ${msg}`);
-      return false;
+      return { muted: false };
     }
   }
 }

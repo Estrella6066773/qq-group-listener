@@ -6,12 +6,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { PackRegistry, loadPluginConfig, readPackYamlText, writePackYaml } from "./policy/load.js";
+import { PackRegistry, loadPluginConfig, writePackYaml } from "./policy/load.js";
+import { applyPackEdit, getPackView, unbindGroup } from "./policy/pack-editor.js";
 import { BufferStore } from "./store/buffer.js";
 import { BatchGate } from "./store/batch-gate.js";
 import { MuteAction } from "./actions/mute.js";
 import { Intake, resolveDataPaths } from "./intake.js";
 import { createPolicyToolHandlers } from "./tools/policy-tool.js";
+import type { PackEdit } from "./types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -200,18 +202,7 @@ export function buildOverview(rt: ListenerRuntime) {
 }
 
 export function getPackPayload(rt: ListenerRuntime, packId: string) {
-  const pack = rt.registry.getPackById(packId);
-  if (!pack) throw new Error(`策略包不存在: ${packId}`);
-  return {
-    packId: pack.id,
-    version: pack.version,
-    description: pack.description ?? "",
-    keywordCount: pack.keywords.length,
-    keywordsSample: pack.keywords.slice(0, 30),
-    yamlText: readPackYamlText(rt.rootDir, packId),
-    batchDecision: pack.batchDecision ?? null,
-    mute: pack.mute ?? null,
-  };
+  return getPackView(rt.registry, packId);
 }
 
 export function savePack(rt: ListenerRuntime, packId: string, yamlText: string) {
@@ -225,4 +216,12 @@ export function savePack(rt: ListenerRuntime, packId: string, yamlText: string) 
     version: pack.version,
     keywordCount: pack.keywords.length,
   };
+}
+
+export function editPack(rt: ListenerRuntime, packId: string, edit: PackEdit) {
+  return applyPackEdit(rt.registry, packId, edit);
+}
+
+export function unbindPackGroup(rt: ListenerRuntime, groupOpenId: string) {
+  return unbindGroup(rt.registry, groupOpenId);
 }

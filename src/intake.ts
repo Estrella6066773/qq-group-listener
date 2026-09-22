@@ -1,6 +1,10 @@
 /**
  * Intake：OpenClaw before_dispatch 事件 → InboundMessage + RouteDecision 副作用。
  * 联动：PackRegistry → PolicyRouter → BufferStore / StateStore / MuteAction。
+ *
+ * 静默自动化：keyword 可 wake=false + onHit=countAndMaybeMute → 达阈自动禁言，
+ * 不唤醒 agent；禁言成功后写入 kind=mute_event 缓冲，供批决策阅读。
+ *
  * 注意：失败时 fail-open（返回 undefined，不吞消息）；群 OpenID 必须大写。
  */
 
@@ -12,6 +16,7 @@ import { BufferStore } from "./store/buffer.js";
 import { BatchGate } from "./store/batch-gate.js";
 import { StateStore, stateFileForGroup } from "./store/state.js";
 import type { MuteAction } from "./actions/mute.js";
+import { buildMuteEventRecord } from "./actions/mute-event.js";
 import type { BufferRecord, InboundMessage, RouteDecision } from "./types.js";
 
 export type IntakeLogger = {
@@ -32,10 +37,13 @@ export type DispatchEvent = {
   rawEventType?: string;
   mentions?: Array<{ is_you?: boolean }>;
   timestamp?: number;
+  /** OpenClaw originating channel：qqbot 入站为 "qqbot"；Control UI 打字为 "webchat"。 */
+  channel?: string;
 };
 
 export type DispatchCtx = {
   sessionKey?: string;
+  channelId?: string;
 };
 
 export function normalizeGroupKey(raw: unknown): string {
@@ -47,12 +55,25 @@ export function groupIdFromSessionKey(sessionKey: unknown): string {
   return m ? normalizeGroupKey(m[1]) : "";
 }
 
+/** 仅处理 QQ 频道真实入站；放过 webchat / Control UI 等操作员输入。 */
+export function isQqbotInboundChannel(channel: unknown): boolean {
+  const ch = String(channel ?? "")
+    .trim()
+    .toLowerCase();
+  return ch === "qqbot" || ch.startsWith("qqbot:");
+}
+
 export function toInbound(
   event: DispatchEvent,
   ctx: DispatchCtx | undefined,
   appId?: string,
 ): InboundMessage | null {
   const sessionKey = ctx?.sessionKey ?? event.sessionKey;
+  const channel = event.channel ?? ctx?.channelId;
+  // 关键：群会话里从 Control UI 打字时 sessionKey 仍含 :group:，但 channel=webchat。
+  // 若只看 sessionKey 会误吞操作员输入（handled:true → 龙虾客户端像卡住）。
+  if (!isQqbotInboundChannel(channel)) return null;
+
   const groupOpenId = groupIdFromSessionKey(sessionKey);
   const isGroup = event.isGroup === true || Boolean(groupOpenId);
   if (!isGroup || !groupOpenId) return null;
@@ -101,6 +122,27 @@ export class Intake {
     return s;
   }
 
+  private appendAndRefreshGate(
+    rec: BufferRecord,
+    pack: { id: string; batchDecision?: unknown },
+    groupOpenId: string,
+    atMs: number,
+  ): void {
+    try {
+      this.buffer.append(rec);
+      const status = this.gate.refresh(groupOpenId, pack as never, atMs);
+      if (status.ready) {
+        this.logger.info?.(
+          `qq-group-listener: batch ready group=${groupOpenId} reasons=${status.reasons.join(",")}`,
+        );
+      }
+    } catch (err) {
+      this.logger.error?.(
+        `qq-group-listener: buffer append failed: ${err instanceof Error ? err.message : err}`,
+      );
+    }
+  }
+
   /**
    * 处理入站。返回值直接作为 before_dispatch 的返回：
    * - `{ handled: true }` 吞掉（零模型调用）
@@ -135,21 +177,9 @@ export class Intake {
         timestampMs: msg.timestampMs,
         packId: pack.id,
         matchedRule: decision.matchedRule,
+        kind: "message",
       };
-      try {
-        this.buffer.append(rec);
-        // 刷新批决策门闩（消息数/间隔/空闲触发）
-        const status = this.gate.refresh(msg.groupOpenId, pack, msg.timestampMs);
-        if (status.ready) {
-          this.logger.info?.(
-            `qq-group-listener: batch ready group=${msg.groupOpenId} reasons=${status.reasons.join(",")}`,
-          );
-        }
-      } catch (err) {
-        this.logger.error?.(
-          `qq-group-listener: buffer append failed: ${err instanceof Error ? err.message : err}`,
-        );
-      }
+      this.appendAndRefreshGate(rec, pack, msg.groupOpenId, msg.timestampMs);
     }
 
     for (const action of decision.actions) {
@@ -168,13 +198,28 @@ export class Intake {
             `member=${msg.memberOpenId} window=${count} new=${isNew}`,
         );
         if (isNew) {
-          await this.mute.maybeMute({
+          const result = await this.mute.maybeMute({
             groupOpenId: msg.groupOpenId,
             memberOpenId: msg.memberOpenId,
             hitCount: count,
             policy: pack.mute,
             state,
           });
+          // 禁言成功：写入系统记录供批决策阅读，不依赖 wake
+          if (result.muted) {
+            const muteRec = buildMuteEventRecord({
+              groupOpenId: msg.groupOpenId,
+              memberOpenId: msg.memberOpenId,
+              packId: pack.id,
+              matchedRule: decision.matchedRule,
+              timestampMs: Date.now(),
+              seconds: result.seconds,
+              keywords: action.matchedKeywords,
+              hitCount: count,
+              extended: result.extended,
+            });
+            this.appendAndRefreshGate(muteRec, pack, msg.groupOpenId, muteRec.timestampMs);
+          }
         }
       }
     }

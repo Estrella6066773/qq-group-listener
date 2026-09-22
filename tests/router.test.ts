@@ -38,7 +38,8 @@ describe("PolicyRouter + addiction-mute pack", () => {
   it("wakes on keyword and schedules mute action", () => {
     const d = evaluate(msg({ text: "谁有槟榔" }), pack);
     expect(d.matchedRule).toBe("keyword");
-    expect(d.wake).toBe(true);
+    expect(d.wake).toBe(false);
+    expect(d.buffer).toBe(true);
     expect(d.actions[0]?.type).toBe("countAndMaybeMute");
   });
 

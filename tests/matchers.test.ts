@@ -1,5 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { isLatinToken, matchKeywords, normalizeForMatch, toSimplified } from "../src/policy/matchers.js";
+import {
+  isLatinToken,
+  isMentioned,
+  matchKeywords,
+  normalizeForMatch,
+  toSimplified,
+} from "../src/policy/matchers.js";
+
+describe("isMentioned", () => {
+  it("detects OpenClaw qqbot (@you) marker in body text", () => {
+    expect(isMentioned({ text: "[成员] 你好 (@you)" })).toBe(true);
+    expect(isMentioned({ text: "(@you)" })).toBe(true);
+    expect(isMentioned({ text: "普通闲聊" })).toBe(false);
+  });
+
+  it("still honors raw event / mentions / appId", () => {
+    expect(isMentioned({ rawEventType: "GROUP_AT_MESSAGE_CREATE" })).toBe(true);
+    expect(isMentioned({ mentions: [{ is_you: true }] })).toBe(true);
+    expect(isMentioned({ text: "hi <@bot-app>", appId: "bot-app" })).toBe(true);
+  });
+});
 
 describe("matchers", () => {
   it("matches Chinese substring", () => {
