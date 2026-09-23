@@ -142,7 +142,7 @@ export default defineControlUiPlugin({
 
                 <section class="qgl-section" data-section="route-mute">
                   <h3>路由与禁言</h3>
-                  <p class="qgl-note">路由：每条真实 QQ 群消息按顺序试 mention → keyword → default，命中即停，决定是否唤醒即时模型、是否写入缓冲。禁言：仅 keyword 命中且 onHit 为「计数并可能禁言」时，由插件自动执行。撤回：勾选「撤回命中消息」时调用官方 DELETE（须管理员，通常 2 分钟内）。均不经过即时模型。</p>
+              <p class="qgl-note">路由：每条真实 QQ 群消息按顺序试 mention → keyword → default，命中即停。本插件是泄流闸：只决定是否唤醒 / 是否写入缓冲；唤醒时会把近期缓冲聊天注入 agent，不限制回复话题。禁言与撤回是旁路动作，须管理员权限。</p>
                   <p class="qgl-hint" data-role="route-hint"></p>
                   <div class="qgl-form-grid" data-role="route-fields"></div>
                   <p class="qgl-hint" data-role="mute-hint"></p>
@@ -304,7 +304,7 @@ export default defineControlUiPlugin({
           el.routeFields.innerHTML = `
             <div class="qgl-field-block">
               <span class="qgl-field-title">提及（@ / mention）</span>
-              <p class="qgl-note">机器人被 @ 或提及时走此规则。常见配置：开唤醒、关缓冲 → 立刻由即时模型回复，不入批决策缓冲。</p>
+              <p class="qgl-note">机器人被 @ 或提及时走此规则。常见配置：开唤醒、开缓冲 → 立刻回复，同时记账供下次拼上下文。</p>
               <label class="qgl-field">唤醒即时模型
                 <input type="checkbox" data-rf="mention.wake" ${r.mention?.wake ? "checked" : ""} />
               </label>

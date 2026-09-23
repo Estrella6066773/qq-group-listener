@@ -25,11 +25,13 @@ type RawPack = {
   route: {
     order?: RouteRuleKind[];
     mention?: RouteRule;
+    summon?: RouteRule;
     keyword?: RouteRule;
     default: RouteRule;
   };
   mute?: PolicyPack["mute"];
   batchDecision?: PolicyPack["batchDecision"];
+  wakeContext?: PolicyPack["wakeContext"];
 };
 
 type RawKeywords = {
@@ -122,6 +124,9 @@ function normalizeKeywordRule(raw?: RouteRule): RouteRule | undefined {
   };
 }
 
+/** summon 与 keyword 同形，同用一套归一化。 */
+const normalizeRouteRule = normalizeKeywordRule;
+
 /**
  * 读取 keywords.yaml 结构化数据。
  * 注意：categories 保留全部分类；扁平 keywords 需再经 flattenKeywords 排除全局 exclude。
@@ -208,6 +213,7 @@ export function loadPack(rootDir: string, packId: string): PolicyPack | null {
   const order = (raw.route.order ?? ["default"]) as RouteRuleKind[];
   const batchDecision = normalizeBatchPolicy(raw.batchDecision);
   const keyword = normalizeKeywordRule(raw.route.keyword);
+  const summon = normalizeRouteRule(raw.route.summon);
 
   return {
     id: raw.id,
@@ -216,11 +222,13 @@ export function loadPack(rootDir: string, packId: string): PolicyPack | null {
     route: {
       order,
       mention: raw.route.mention,
+      ...(summon ? { summon } : {}),
       keyword,
       default: raw.route.default,
     },
     mute: raw.mute,
     batchDecision,
+    wakeContext: raw.wakeContext,
     keywords,
     categories,
     looseKeywords,

@@ -32,6 +32,7 @@
 | B7 | 不误伤 | 烟囱 / nice 等不触发 | |
 | B8 | 禁言入缓冲 | 禁言成功后 JSONL 出现 kind=mute_event，批决策可读 | |
 | B9 | 关键词撤回 | recallHitMessage=true 时命中即尝试撤回；成功出现 kind=recall_event；超时/无权限仅日志失败 | |
+| B10 | 唤醒带上下文 | @ 唤醒后 prompt 含近期缓冲聊天（prependContext）；不限制回复话题 | |
 
 ## Control UI 结构化编辑（C）
 

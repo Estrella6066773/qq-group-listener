@@ -17,7 +17,7 @@ export type InboundMessage = {
   raw?: unknown;
 };
 
-export type RouteRuleKind = "mention" | "keyword" | "default";
+export type RouteRuleKind = "mention" | "summon" | "keyword" | "default";
 
 /** 多条匹配规则如何合并。 */
 export type MatchCombine = "any" | "all";
@@ -138,11 +138,22 @@ export type PolicyPack = {
   route: {
     order: RouteRuleKind[];
     mention?: RouteRule;
+    /** 喊名字即唤醒（无需 @）：按规则内 match 命中正文即 wake，不计数、不禁言。 */
+    summon?: RouteRule;
     keyword?: RouteRule;
     default: RouteRule;
   };
   mute?: MutePolicy;
   batchDecision?: BatchDecisionPolicy;
+  /**
+   * 唤醒时注入近期缓冲聊天记录（泄流闸：只控时机，不限内容）。
+   * 缺省：enabled=true, maxMessages=40, maxChars=12000。
+   */
+  wakeContext?: {
+    enabled?: boolean;
+    maxMessages?: number;
+    maxChars?: number;
+  };
   /**
    * 扁平词表（兼容缓存 / 旧逻辑）。
    * 已排除 keywords.yaml 的 excludeCategories；无 match 时 router 直接用此列表。
@@ -190,6 +201,7 @@ export type PackEdit =
       route?: Partial<{
         order: RouteRuleKind[];
         mention: RouteRule | null;
+        summon: RouteRule | null;
         keyword: RouteRule | null;
         default: RouteRule;
       }>;

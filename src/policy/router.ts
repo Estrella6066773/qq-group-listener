@@ -4,7 +4,7 @@
  */
 
 import { isMentioned } from "./matchers.js";
-import { evaluateMatchPolicy } from "./match-policy.js";
+import { evaluateMatchPolicy, evaluatePolicyMatch } from "./match-policy.js";
 import type { InboundMessage, PolicyPack, RouteDecision, RouteRule, RouteRuleKind } from "../types.js";
 
 export function evaluate(msg: InboundMessage, pack: PolicyPack): RouteDecision {
@@ -20,6 +20,15 @@ export function evaluate(msg: InboundMessage, pack: PolicyPack): RouteDecision {
         return fromRule(pack, "mention", rule, []);
       }
       continue;
+    }
+
+    if (kind === "summon") {
+      const rule = pack.route.summon;
+      if (!rule) continue;
+      // 喊名字即唤醒：命中正文即放行，不计数、不禁言。
+      const hits = evaluatePolicyMatch(msg.text, pack, rule.match);
+      if (hits.length === 0) continue;
+      return fromRule(pack, "summon", rule, hits);
     }
 
     if (kind === "keyword") {

@@ -110,6 +110,19 @@ export function evaluateMatchPolicy(text: string, pack: PolicyPack): string[] {
   if (!policy || !Array.isArray(policy.rules) || policy.rules.length === 0) {
     return matchKeywords(text, pack.keywords);
   }
+  return evaluatePolicyMatch(text, pack, policy);
+}
+
+/**
+ * 按显式 match 策略求值（供 summon 等非 keyword 路由复用）。
+ * policy 缺省或规则为空时返回 []（不退回扁平词表）。
+ */
+export function evaluatePolicyMatch(
+  text: string,
+  pack: PolicyPack,
+  policy: MatchPolicy | undefined,
+): string[] {
+  if (!policy || !Array.isArray(policy.rules) || policy.rules.length === 0) return [];
 
   const combine = policy.combine === "all" ? "all" : "any";
   const collected: string[] = [];

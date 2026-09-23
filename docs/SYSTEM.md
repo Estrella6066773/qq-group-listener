@@ -10,6 +10,27 @@
 
 引擎**不**内置成瘾品词表或禁言阈值；这些只存在于策略包。
 
+## 泄流闸语义（产品定位）
+
+本插件是 **泄流闸**，不是内容审查器：
+
+| 管什么 | 不管什么 |
+|---|---|
+| **何时**唤醒即时模型 / 何时静默入缓冲 / 何时批决策 | agent **回复什么话题、说什么内容** |
+| 旁路动作：关键词计数禁言、撤回命中消息 | 替模型决定能不能聊某话题 |
+
+静默消息经 `before_dispatch` 返回 `{ handled: true }` **不会**进入 OpenClaw 会话历史。  
+因此在真正唤醒时（`wake=true` 放行，或批决策 agent 启动），插件通过 `before_prompt_build` 的 `prependContext` 注入近期缓冲聊天记录，效果接近原生 QQ bot 把群记录交给模型。
+
+策略包可选 `wakeContext`（默认开启）：
+
+```yaml
+wakeContext:
+  enabled: true
+  maxMessages: 40
+  maxChars: 12000
+```
+
 ## 热重载
 
 - `PackRegistry` 按 `pack.yaml` / 词表 / 提示词 / `groups.yaml` 的 **mtime** 失效缓存。

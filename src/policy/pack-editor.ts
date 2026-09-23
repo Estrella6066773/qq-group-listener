@@ -195,6 +195,17 @@ export function applyPackEdit(registry: PackRegistry, packId: string, edit: Pack
             if (edit.route.mention === null) delete route.mention;
             else route.mention = edit.route.mention as RouteRule;
           }
+          if (edit.route.summon !== undefined) {
+            if (edit.route.summon === null) delete route.summon;
+            else {
+              const sm = edit.route.summon as RouteRule;
+              const match = sm.match ? normalizeMatchPolicy(sm.match) : undefined;
+              route.summon = { ...sm, ...(match ? { match } : { match: undefined }) };
+              if (!match && "match" in (route.summon as object)) {
+                delete (route.summon as { match?: MatchPolicy }).match;
+              }
+            }
+          }
           if (edit.route.keyword !== undefined) {
             if (edit.route.keyword === null) delete route.keyword;
             else {

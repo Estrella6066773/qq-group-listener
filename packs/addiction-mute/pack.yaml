@@ -1,17 +1,23 @@
 id: addiction-mute
-version: "1.4"
+version: "1.5"
 description: |
   成瘾品关键词策略包：插件在入站时自动处理，即时模型与批决策模型各走各的路径。
 
-  【路由顺序】mention → keyword → default（短路：命中即停）。
+  【路由顺序】mention → summon → keyword → default（短路：命中即停）。
 
-  【@ / 提及】命中 mention 时即时唤醒模型（wake=true），本条不入缓冲。
-  仅处理 QQ 频道真实入站（channel=qqbot）；在控制台群会话里打字（channel=webchat）不经过本包静默逻辑。
+  【@ / 提及】命中 mention 时即时唤醒模型（wake=true）；本条也写入缓冲（buffer=true），
+  便于后续唤醒时拼出完整聊天记录。仅处理 QQ 频道真实入站（channel=qqbot）。
+
+  【喊名字】正文出现「艾丽卡」等称呼时，无需 @ 也唤醒即时模型（wake=true），并记账入缓冲；
+  不计数、不禁言、不撤回。称呼词表见 route.summon.match。
 
   【关键词】命中词表时：不唤醒即时模型（wake=false）；原消息写入缓冲；
   对发送者做滑动窗口计数（onHit=countAndMaybeMute）；并立即撤回该条消息（recallHitMessage=true）。
   匹配规则：combine=any，按分类 betel/tobacco/cannabis/classic_drugs/novel_psychoactive/prescription_abuse 任一命中；
   全局与规则级均排除 alcohol。词表见 keywords.yaml。
+
+  【泄流闸】插件只控制「何时」唤醒；唤醒时通过 before_prompt_build 注入近期缓冲聊天记录，
+  不限制 agent 回复的话题范围。禁言/撤回是旁路动作，不是内容审查。
 
   【自动撤回】官方 DELETE /v2/groups/{group_openid}/messages/{message_id}；
   须机器人是群管理员；发送超过约 2 分钟不可撤回。成功后追加 kind=recall_event。
@@ -28,16 +34,37 @@ description: |
   ready 后由批决策 agent 阅读缓冲（含用户消息与自动禁言/撤回记录），按 decision-prompt.md 决定是否发言；
   看到自动禁言/撤回记录不要再次发起同类操作。
 
+wakeContext:
+  enabled: true
+  maxMessages: 40
+  maxChars: 12000
+
 route:
   # 短路求值：按 order 依次尝试，命中即停止。仅 channel=qqbot 的真实入站会走本路由。
   order:
     - mention   # @ / 被机器人提及
+    - summon    # 喊名字（无需 @）
     - keyword   # 关键词匹配（见下方 match / keywords.yaml）
     - default   # 其余闲聊
   mention:
-    # wake=true：本条立即交给即时模型；buffer=false：不写入批决策缓冲
+    # wake=true：本条立即交给即时模型；buffer=true：同时记账，供下次唤醒拼上下文
     wake: true
-    buffer: false
+    buffer: true
+  summon:
+    # 喊名字即唤醒（无需 @）：命中正文即交给即时模型，不计数、不禁言。
+    # 称呼词表在此维护；match 为空则本条不生效。
+    wake: true
+    buffer: true
+    match:
+      combine: any
+      rules:
+        - type: terms
+          terms:
+            - 艾丽卡
+            - 艾莉卡
+            - 爱丽卡
+            - 超天酱
+          within: any
   keyword:
     # wake=false：不叫即时模型；buffer=true：原消息入缓冲供批决策阅读
     # onHit=countAndMaybeMute：命中后按 mute 策略计数，达阈由插件自动禁言

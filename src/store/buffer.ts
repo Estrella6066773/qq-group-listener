@@ -92,6 +92,27 @@ export class BufferStore {
     }
   }
 
+  /**
+   * 读取该群缓冲末尾最多 max 条（不推进游标）。
+   * 供唤醒时注入近期聊天记录。
+   */
+  readRecent(groupOpenId: string, max: number): BufferRecord[] {
+    if (max <= 0) return [];
+    const file = this.bufferPath(groupOpenId);
+    if (!fs.existsSync(file)) return [];
+    const lines = fs.readFileSync(file, "utf8").split(/\r?\n/).filter((l) => l.trim());
+    const slice = lines.slice(-max);
+    const records: BufferRecord[] = [];
+    for (const line of slice) {
+      try {
+        records.push(JSON.parse(line) as BufferRecord);
+      } catch {
+        /* skip */
+      }
+    }
+    return records;
+  }
+
   batchStatusPath(groupOpenId: string): string {
     return this.batchPath(groupOpenId);
   }

@@ -12,7 +12,8 @@ import { BufferStore } from "./store/buffer.js";
 import { BatchGate } from "./store/batch-gate.js";
 import { MuteAction } from "./actions/mute.js";
 import { RecallAction } from "./actions/recall.js";
-import { Intake, resolveDataPaths } from "./intake.js";
+import { Intake, groupIdFromSessionKey, resolveDataPaths } from "./intake.js";
+import { formatWakeContext } from "./wake-context.js";
 import { createPolicyToolHandlers } from "./tools/policy-tool.js";
 import type { PackEdit } from "./types.js";
 
@@ -137,6 +138,42 @@ export function bootListenerRuntime(api: ListenerApi): ListenerRuntime {
     { priority: 100 },
   );
 
+  // 泄流闸放行后：把静默期缓冲聊天注入 prompt（原生会话里没有这些被吞掉的消息）
+  api.on(
+    "before_prompt_build",
+    (event, ctx) => {
+      try {
+        const sessionKey =
+          (ctx as { sessionKey?: string })?.sessionKey ??
+          (event as { sessionKey?: string })?.sessionKey;
+        const groupOpenId = groupIdFromSessionKey(sessionKey);
+        if (!groupOpenId) return undefined;
+
+        const pack = registry.getForGroup(groupOpenId);
+        if (!pack) return undefined;
+
+        const opts = pack.wakeContext ?? {};
+        if (opts.enabled === false) return undefined;
+
+        const max = opts.maxMessages ?? 40;
+        const recent = buffer.readRecent(groupOpenId, max);
+        const text = formatWakeContext(recent, opts);
+        if (!text) return undefined;
+
+        api.logger?.debug?.(
+          `qq-group-listener: wake-context group=${groupOpenId} lines=${recent.length}`,
+        );
+        return { prependContext: text };
+      } catch (err) {
+        api.logger?.error?.(
+          `qq-group-listener: wake-context error: ${err instanceof Error ? err.message : err}`,
+        );
+        return undefined;
+      }
+    },
+    { priority: 80 },
+  );
+
   const policyTool = createPolicyToolHandlers({
     registry,
     buffer,
@@ -146,7 +183,7 @@ export function bootListenerRuntime(api: ListenerApi): ListenerRuntime {
 
   const bound = Object.keys(registry.listBindings().groups).length;
   api.logger?.info?.(
-    `qq-group-listener ready: root=${rootDir} data=${dataDir} groups=${bound} dryRun=${dryRun} hotReload=mtime ui=control`,
+    `qq-group-listener ready: root=${rootDir} data=${dataDir} groups=${bound} dryRun=${dryRun} hotReload=mtime ui=control wakeContext=on`,
   );
 
   return { rootDir, dataDir, dryRun, registry, buffer, gate };

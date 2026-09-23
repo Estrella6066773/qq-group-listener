@@ -20,7 +20,7 @@ export default defineFeaturePlugin({
   contract,
   name: "QQ Group Policy Pack Engine",
   description:
-    "QQ multi-group policy packs: hot-reload, batch triggers, mute, Control UI admin.",
+    "QQ floodgate: when to wake / buffer / mute / recall; injects recent chat on wake.",
   setup(api, events) {
     const rt = bootListenerRuntime(api as unknown as ListenerApi);
 

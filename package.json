@@ -1,7 +1,7 @@
 {
   "name": "qq-group-listener",
-  "version": "0.3.0",
-  "description": "OpenClaw QQ multi-group policy-pack engine with Control UI admin.",
+  "version": "0.4.0",
+  "description": "OpenClaw QQ floodgate: route when to wake, inject chat buffer, mute/recall side effects.",
   "type": "module",
   "private": true,
   "main": "./dist/index.js",
