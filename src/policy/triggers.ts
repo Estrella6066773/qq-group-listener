@@ -28,12 +28,15 @@ export function normalizeBatchPolicy(
     : raw.intervalMinutes
       ? ([{ type: "interval", everyMinutes: raw.intervalMinutes }] as BatchTrigger[])
       : [];
-  return {
-    ...raw,
+  const out: BatchDecisionPolicy = {
+    promptFile: raw.promptFile,
+    deliveryChannelPrefix: raw.deliveryChannelPrefix,
     combine: raw.combine === "all" ? "all" : "any",
     pollEveryMinutes: raw.pollEveryMinutes ?? 1,
     triggers,
   };
+  if (raw.intervalMinutes !== undefined) out.intervalMinutes = raw.intervalMinutes;
+  return out;
 }
 
 export function evaluateBatchTriggers(

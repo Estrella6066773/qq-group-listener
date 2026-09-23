@@ -1,5 +1,5 @@
 /**
- * 策略包引擎的共享类型。
+ * 冲浪指南（策略包引擎）的共享类型。
  * 联动：load.ts 解析 YAML → PolicyPack；router / match-policy 求值；
  * PackEditor + Control UI 经 PackEdit / PackView 读写；Intake / Actions 消费路由结果。
  *

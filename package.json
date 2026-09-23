@@ -1,7 +1,7 @@
 {
   "name": "qq-group-listener",
   "version": "0.4.0",
-  "description": "OpenClaw QQ floodgate: route when to wake, inject chat buffer, mute/recall side effects.",
+  "description": "小龙虾的 QQ 群科学冲浪指南（Smart QQ Group Listener for OpenClaw）：按策略包决定唤醒/缓冲/禁言/撤回。",
   "type": "module",
   "private": true,
   "main": "./dist/index.js",

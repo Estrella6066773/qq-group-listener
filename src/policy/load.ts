@@ -114,14 +114,17 @@ export function packFingerprint(rootDir: string, packId: string): number {
 function normalizeKeywordRule(raw?: RouteRule): RouteRule | undefined {
   if (!raw) return undefined;
   const match = normalizeMatchPolicy(raw.match);
-  return {
+  // 注意：勿写入 undefined 可选字段；Feature 输出经 isPluginJsonValue，含 undefined 会报
+  // “Feature output must be bounded JSON”。
+  const out: RouteRule = {
     wake: Boolean(raw.wake),
     buffer: Boolean(raw.buffer),
-    keywordsRef: raw.keywordsRef,
-    onHit: raw.onHit,
-    ...(raw.recallHitMessage ? { recallHitMessage: true } : {}),
-    ...(match ? { match } : {}),
   };
+  if (raw.keywordsRef) out.keywordsRef = raw.keywordsRef;
+  if (raw.onHit) out.onHit = raw.onHit;
+  if (raw.recallHitMessage) out.recallHitMessage = true;
+  if (match) out.match = match;
+  return out;
 }
 
 /** summon 与 keyword 同形，同用一套归一化。 */

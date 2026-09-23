@@ -23,7 +23,10 @@ raw.configSchema = {
 };
 raw.version = raw.version || "0.2.0";
 raw.description =
-  "QQ multi-group policy packs with hot-reload, batch triggers, mute, and Control UI admin.";
+  "小龙虾的 QQ 群科学冲浪指南：按群策略包决定唤醒/缓冲/禁言/撤回；热重载与 Control UI（侧栏 QQ冲浪指南）。";
+if (!raw.name || raw.name === "QQ Group Policy Pack Engine") {
+  raw.name = "Smart QQ Group Listener for OpenClaw";
+}
 
 fs.writeFileSync(file, `${JSON.stringify(raw, null, 2)}\n`, "utf8");
 console.log("patched openclaw.plugin.json (configSchema + contracts.tools)");

@@ -1,5 +1,5 @@
 /**
- * Control UI：QQ 群策略包结构化管理页（无 YAML 文本编辑）。
+ * Control UI：侧栏「QQ冲浪指南」结构化管理页（无 YAML 文本编辑）。
  * 联动：createFeatureClient → overview / get_pack / apply_pack_edit / bind|unbind / batch_*；
  * 仅在 Labs → Custom plugin UI 开启后加载。
  */
@@ -56,7 +56,7 @@ export default defineControlUiPlugin({
   activate(host) {
     host.ui.registerNavigation({
       id: "qq-policy",
-      label: "QQ 群策略",
+      label: "QQ冲浪指南",
       page: { id: "qq-policy" },
       icon: "shield",
       group: "control",
@@ -64,7 +64,7 @@ export default defineControlUiPlugin({
 
     host.ui.registerPage({
       id: "qq-policy",
-      label: "QQ 群策略",
+      label: "QQ冲浪指南",
       mount(container, context) {
         const feature = createFeatureClient(contract, context.host);
         const root = document.createElement("section");
@@ -72,8 +72,8 @@ export default defineControlUiPlugin({
         root.innerHTML = `
           <header class="qgl-header">
             <div>
-              <h1>QQ 群策略包</h1>
-              <p class="qgl-sub">结构化编辑 · 词表 / 匹配条件 / 批触发器 · 群绑定（仅 QQ 扩展）</p>
+              <h1>QQ冲浪指南</h1>
+              <p class="qgl-sub">小龙虾的 QQ 群科学冲浪指南 · 词表 / 匹配条件 / 批触发器 · 群绑定</p>
             </div>
             <div class="qgl-actions">
               <button type="button" class="qgl-btn" data-act="refresh">刷新</button>

@@ -32,7 +32,7 @@ describe("PolicyRouter + addiction-mute pack", () => {
     const d = evaluate(msg({ text: "你好", mentioned: true }), pack);
     expect(d.matchedRule).toBe("mention");
     expect(d.wake).toBe(true);
-    expect(d.buffer).toBe(false);
+    expect(d.buffer).toBe(true); // addiction-mute：@ 也入缓冲，供唤醒拼聊天记录
   });
 
   it("wakes on keyword and schedules mute action", () => {

@@ -1,7 +1,7 @@
 {
   "id": "qq-group-listener",
-  "name": "QQ Group Policy Pack Engine",
-  "description": "QQ multi-group policy packs with hot-reload, batch triggers, mute, and Control UI admin.",
+  "name": "Smart QQ Group Listener for OpenClaw",
+  "description": "小龙虾的 QQ 群科学冲浪指南：按群策略包决定唤醒/缓冲/禁言/撤回；热重载与 Control UI（侧栏 QQ冲浪指南）。",
   "version": "0.4.0",
   "activation": {
     "onStartup": true
@@ -34,9 +34,9 @@
     }
   },
   "controlUi": {
-    "entry": "dist/control-ui/9188c5dd7e57b34cd8ac05829b72c442ed90aef18b82e24b57a44b6827f8a49d/index.js",
+    "entry": "dist/control-ui/e836f74fea84fc743ada02b06cfb6de1afe3443fd27a0b5df360cf0978d6e2a5/index.js",
     "styles": [
-      "dist/control-ui/9188c5dd7e57b34cd8ac05829b72c442ed90aef18b82e24b57a44b6827f8a49d/index.css"
+      "dist/control-ui/e836f74fea84fc743ada02b06cfb6de1afe3443fd27a0b5df360cf0978d6e2a5/index.css"
     ]
   },
   "contracts": {

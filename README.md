@@ -1,11 +1,20 @@
-﻿# QQ 群策略包
+﻿# 小龙虾的 QQ 群科学冲浪指南
 
-OpenClaw 插件：按群绑定策略包，用「泄流闸」决定群消息何时唤醒模型、何时只记账、何时旁路禁言/撤回；**不限制** agent 回复内容。唤醒时会把近期缓冲聊天记录注入 prompt。
+**Smart QQ Group Listener for OpenClaw**
+
+本插件让小龙虾（OpenClaw agent）在 QQ 群里更智能地互动，而不是下面两种极端：
+
+| 极端 | 行为 |
+|---|---|
+| 每句话都回 | 几乎每条消息都唤醒模型 |
+| 只在被 @ 时回 | `requireMention: true`，未 @ 则完全进不来 |
+
+性质上，它是 OpenClaw 上的 **QQ 群策略包引擎**：按群绑定可替换的策略包，用「泄流闸」决定何时唤醒模型、何时只记账、何时旁路禁言/撤回；**不限制** agent 回复内容。唤醒时会把近期缓冲聊天记录注入 prompt。
 
 ## 你能做什么
 
 - 给不同 QQ 群绑定不同策略包（例如「成瘾品禁言+撤回」或「只记账」）
-- 在 Control UI 侧栏 **QQ 群策略** 结构化管理词表 / 匹配条件 / 批触发器 / 群绑定（无 YAML 文本框）
+- 在 Control UI 侧栏 **QQ冲浪指南** 结构化管理词表 / 匹配条件 / 批触发器 / 群绑定（无 YAML 文本框）
 - 策略包 YAML 仍落盘，改完按 mtime 热重载；插件 JS 变更需重启 Gateway
 - 让模型通过工具 `qq_group_policy` 读写策略包与群绑定（需按群单独放行）
 
@@ -52,7 +61,7 @@ groups:
 
 1. Settings → Labs → 开启 **Custom plugin UI**（`gateway.controlUi.experimental.customPlugins: true`）
 2. 打开 Control UI（如 `http://127.0.0.1:18789/`）并刷新页面
-3. 侧栏进入 **QQ 群策略**
+3. 侧栏进入 **QQ冲浪指南**
 
 页面可改策略包正文、刷新或确认批决策门闩。本地改了 UI 源码后执行 `npm run build`，再在 Plugins → Customize UI → **Reload plugin UI**。
 

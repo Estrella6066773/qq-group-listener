@@ -1,5 +1,5 @@
 /**
- * Feature Plugin 入口：QQ 群策略包引擎 + Control UI 管理页后端操作。
+ * Feature Plugin 入口：小龙虾的 QQ 群科学冲浪指南（性质：策略包引擎）+ Control UI（侧栏「QQ冲浪指南」）。
  * 联动：setup → bootListenerRuntime（before_dispatch）+ Feature handlers（供 Control UI）。
  */
 
@@ -18,9 +18,9 @@ import type { PackEdit } from "./types.js";
 
 export default defineFeaturePlugin({
   contract,
-  name: "QQ Group Policy Pack Engine",
+  name: "Smart QQ Group Listener for OpenClaw",
   description:
-    "QQ floodgate: when to wake / buffer / mute / recall; injects recent chat on wake.",
+    "小龙虾的 QQ 群科学冲浪指南：何时唤醒/缓冲/禁言/撤回；唤醒时注入近期群聊。",
   setup(api, events) {
     const rt = bootListenerRuntime(api as unknown as ListenerApi);
 

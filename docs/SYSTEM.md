@@ -1,4 +1,7 @@
-# 系统说明：策略包引擎
+# 系统说明：小龙虾的 QQ 群科学冲浪指南
+
+正式名：**小龙虾的 QQ 群科学冲浪指南**（Smart QQ Group Listener for OpenClaw）。  
+性质上是 OpenClaw 上的 QQ 群策略包引擎：按群加载策略包，决定唤醒／缓冲／侧效。
 
 ## 引擎 vs 策略包
 
@@ -12,7 +15,7 @@
 
 ## 泄流闸语义（产品定位）
 
-本插件是 **泄流闸**，不是内容审查器：
+本指南对应的运行时是 **泄流闸**，不是内容审查器：
 
 | 管什么 | 不管什么 |
 |---|---|
@@ -121,7 +124,7 @@ cron **高频轮询**门闩（建议 `pollEveryMinutes: 1`），只有 `ready=tr
 
 ## Control UI
 
-侧栏「QQ 群策略」页（Feature Plugin 原生 UI）。需开启 Labs → Custom plugin UI。页面操作走 Feature session actions，**不**改全局 `tools.allow`。
+侧栏「QQ冲浪指南」页（Feature Plugin 原生 UI）。需开启 Labs → Custom plugin UI。页面操作走 Feature session actions，**不**改全局 `tools.allow`。
 
 **结构化编辑（无 YAML 文本框）**，按节即时写入 `apply_pack_edit`：
 

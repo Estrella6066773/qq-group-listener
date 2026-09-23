@@ -74,4 +74,20 @@ describe("PackEditor", () => {
     expect(out.removed).toBe(true);
     expect(registry.packIdForGroup("ABC123")).toBeNull();
   });
+
+  it("getPackView has no undefined (Feature bounded JSON)", () => {
+    const root = path.resolve(__dirname, "..");
+    const registry = new PackRegistry(root);
+    const view = getPackView(registry, "addiction-mute");
+    const walk = (v: unknown, p: string): void => {
+      expect(v, p).not.toBeUndefined();
+      if (v && typeof v === "object") {
+        for (const [k, e] of Object.entries(v as Record<string, unknown>)) {
+          walk(e, `${p}.${k}`);
+        }
+      }
+    };
+    walk(view, "view");
+    expect(() => JSON.stringify(view)).not.toThrow();
+  });
 });

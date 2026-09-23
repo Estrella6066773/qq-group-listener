@@ -40,10 +40,18 @@ function boundGroupsFor(registry: PackRegistry, packId: string): string[] {
     .sort();
 }
 
+/**
+ * Feature session-action / Control UI 出站前净化：去掉 undefined，得到纯 JSON 对象树。
+ * OpenClaw isPluginJsonValue 遇 undefined 即抛 “Feature output must be bounded JSON”。
+ */
+export function toFeatureJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 export function getPackView(registry: PackRegistry, packId: string): PackView {
   const pack = registry.getPackById(packId);
   if (!pack) throw new Error(`策略包不存在: ${packId}`);
-  return {
+  return toFeatureJson({
     packId: pack.id,
     version: pack.version,
     description: pack.description ?? "",
@@ -57,7 +65,7 @@ export function getPackView(registry: PackRegistry, packId: string): PackView {
     batchDecision: pack.batchDecision ?? null,
     boundGroups: boundGroupsFor(registry, packId),
     yamlText: readPackYamlText(registry.root, packId),
-  };
+  });
 }
 
 function loadKw(registry: PackRegistry, packId: string) {

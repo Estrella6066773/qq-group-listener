@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PackRegistry, loadPluginConfig, writePackYaml } from "./policy/load.js";
-import { applyPackEdit, getPackView, unbindGroup } from "./policy/pack-editor.js";
+import { applyPackEdit, getPackView, toFeatureJson, unbindGroup } from "./policy/pack-editor.js";
 import { BufferStore } from "./store/buffer.js";
 import { BatchGate } from "./store/batch-gate.js";
 import { MuteAction } from "./actions/mute.js";
@@ -231,14 +231,15 @@ export function buildOverview(rt: ListenerRuntime) {
     };
   });
 
-  return {
+  // Feature 出站须无 undefined（否则 Control UI overview 报 bounded JSON）。
+  return toFeatureJson({
     rootDir: rt.rootDir,
     dataDir: rt.dataDir,
     dryRun: rt.dryRun,
     bindings,
     packs,
     batches,
-  };
+  });
 }
 
 export function getPackPayload(rt: ListenerRuntime, packId: string) {

@@ -66,7 +66,7 @@ export function createPolicyToolHandlers(deps: {
   return {
     name: "qq_group_policy",
     description:
-      "QQ 群策略包热管理：读取/重载/结构化编辑 pack、绑定/解绑群、批决策门闩。改配置后按文件 mtime 热重载。",
+      "QQ冲浪指南热管理：读取/重载/结构化编辑策略包、绑定/解绑群、批决策门闩。改配置后按文件 mtime 热重载。",
     parameters: {
       type: "object",
       additionalProperties: false,
