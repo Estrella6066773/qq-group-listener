@@ -33,7 +33,7 @@
   "devDependencies": {
     "@types/node": "^22.13.10",
     "esbuild": "0.28.2",
-    "openclaw": "2026.9.4",
+    "openclaw": "^2026.9.5",
     "typescript": "^5.9.0",
     "vitest": "^3.0.9"
   },
@@ -43,10 +43,10 @@
     ],
     "controlUi": "./src/control-ui.ts",
     "compat": {
-      "pluginApi": ">=2026.9.4"
+      "pluginApi": ">=2026.9.5"
     },
     "build": {
-      "openclawVersion": "2026.9.4"
+      "openclawVersion": "2026.9.5"
     }
   },
   "engines": {
